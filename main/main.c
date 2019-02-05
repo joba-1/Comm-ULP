@@ -26,10 +26,45 @@ char *b2s( uint16_t val, char *buf, uint16_t dots ) {
 }
 
 
+uint32_t *buffer = &ulp_buffer;
+uint16_t size;
+
+/* only done by ULP
+void init(void) {
+  head = tail = buffer;
+}
+*/
+
+void inc( uint16_t *index ) {
+  if( ++(*index) == size ) *index = 0;
+}
+
+/* only done by ULP
+void put( uint16_t item ) {
+  *head = item;
+  inc(head);
+  while( head == tail ) { // overflow!
+    // inc(tail); // discard tail (would need access semaphore for tail)
+    sleep(1)      // wait until tail processed
+  }
+}
+*/
+
+bool get( uint16_t *item ) {
+  uint16_t tail = ulp_get(ulp_tail);
+  uint16_t head = ulp_get(ulp_head);
+  if( tail == head ) return false; // empty buffer!
+  *item = ulp_get(buffer[ulp_get(tail)]);
+  inc(&tail);
+  ulp_tail = tail;
+  return true;
+}
+
+
 void app_main()
 {
-  uint16_t dots = BIT(4) + BIT(8) + BIT(12); // where b2s() places separator dots in the binary string
-  char bins[16+3+1];                         // buffer for a 16 bit binary string with three dots 
+  // uint16_t dots = BIT(4) + BIT(8) + BIT(12); // where b2s() places separator dots in the binary string
+  // char bins[16+3+1];                         // buffer for a 16 bit binary string with three dots
 
   printf("Hello Comm ULP!\n");
 
@@ -39,9 +74,20 @@ void app_main()
   printf("Started ULP.\n");
 
   {
-    /*
-    Demo of ULP copro writing values in a ring buffer and we read them here
-    */
+    // in this example the ULP simply increments a counter when it wakes up,
+    // writes the value as hex string into the ringbuffer and goes to sleep.
+    size = ulp_get(ulp_size); // size of buffer in 32bit words for inc()
+
+    uint16_t item;
+    for(;;) {
+      if( get(&item) ) {
+        putchar(item);
+        if(  item == '\n' ) fflush(stdout);
+      }
+      else {
+        usleep(1000); // wait a ms (maybe helps ulp to access shared memory)
+      }
+    }
   }
 
   printf("Going to sleep now.\n");
@@ -50,4 +96,3 @@ void app_main()
   ESP_ERROR_CHECK( esp_sleep_enable_ulp_wakeup() );
   esp_deep_sleep_start();
 }
-
