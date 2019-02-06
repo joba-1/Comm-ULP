@@ -7,6 +7,8 @@
 
 #include <stdio.h>         // printf(), fflush()
 #include <unistd.h>        // usleep()
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h" // for task and timing
 #include "esp_sleep.h"     // esp_sleep_enable_ulp_wakeup(), esp_deep_sleep_start()
 
 #include "ulp-util.h"      // my ulp_init(), ulp_start(), ulp_get() and .globals
@@ -61,6 +63,32 @@ bool get( uint16_t *item ) {
 }
 
 
+void read_ulp() {
+  size = ulp_get(ulp_size); // size of buffer in 32bit words for inc()
+
+  static uint16_t value = 0;
+
+  uint16_t val;
+  uint16_t item;
+
+  for(;;) {
+    val = ulp_get(ulp_value);
+    if( val != value ) {
+      value = val;
+      printf("expected: %04x\n", value);
+    }
+
+    if( get(&item) ) {
+      putchar(item);
+      if(  item == '\n' ) fflush(stdout);
+    }
+    else {
+      xTaskDelay(0); // wait a bit (maybe helps ulp to access shared memory)
+    }
+  }
+}
+
+
 void app_main()
 {
   // uint16_t dots = BIT(4) + BIT(8) + BIT(12); // where b2s() places separator dots in the binary string
@@ -73,26 +101,15 @@ void app_main()
 
   printf("Started ULP.\n");
 
-  {
-    // in this example the ULP simply increments a counter when it wakes up,
-    // writes the value as hex string into the ringbuffer and goes to sleep.
-    size = ulp_get(ulp_size); // size of buffer in 32bit words for inc()
+  // in this example the ULP simply increments a counter when it wakes up,
+  // writes the value as hex string into the ringbuffer and goes to sleep.
+  xTaskCreate(read_ulp, "read_ulp", 4*configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
 
-    uint16_t item;
-    for(;;) {
-      if( get(&item) ) {
-        putchar(item);
-        if(  item == '\n' ) fflush(stdout);
-      }
-      else {
-        usleep(1000); // wait a ms (maybe helps ulp to access shared memory)
-      }
-    }
-  }
-
+  /*
   printf("Going to sleep now.\n");
   fflush(stdout);
 
   ESP_ERROR_CHECK( esp_sleep_enable_ulp_wakeup() );
   esp_deep_sleep_start();
+  */
 }

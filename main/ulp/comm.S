@@ -11,6 +11,7 @@ Simple ULP program that writes messages in a ring buffer that are read by the ma
 .global size                 // Size of ring buffer
 .global head                 // Write position of ringbuffer
 .global tail                 // Read position of ring buffer
+.global value                // global until ringbuffer works...
 
 .bss
 
