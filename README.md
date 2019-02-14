@@ -1,6 +1,7 @@
 # ULP <=> Main Core Communication
 
 Me trying to make an esp32 ULP talk to the main cores (and vice versa).
+Not working yet :(
 
 ## Build - Flash - Monitor
 * Prepare shell to use ESP-IDF (see my [Blink-ULP repo](https://github.com/joba-1/Blink-ULP/blob/master/README.md) for details)
