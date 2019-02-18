@@ -30,6 +30,7 @@ char *b2s( uint16_t val, char *buf, uint16_t dots ) {
 
 uint32_t *buffer = &ulp_buffer;
 uint16_t size;
+uint16_t offset; // offset of buffer start in ulp address space
 
 /* only done by ULP
 void init(void) {
@@ -38,7 +39,7 @@ void init(void) {
 */
 
 void inc( uint16_t *index ) {
-  if( ++(*index) == size ) *index = 0;
+  if( ++(*index) == offset + size ) *index = offset;
 }
 
 /* only done by ULP
@@ -55,24 +56,29 @@ void put( uint16_t item ) {
 bool get( uint16_t *item ) {
   uint16_t tail = ulp_get(ulp_tail);
   uint16_t head = ulp_get(ulp_head);
+  printf("head: %04x, tail: %04x\n", head, tail);
   if( tail == head ) return false; // empty buffer!
-  *item = ulp_get(buffer[ulp_get(tail)]);
+  *item = ulp_get(buffer[tail-offset]);
   inc(&tail);
   ulp_tail = tail;
+  printf("item: %04x, tail: %04x\n", *item, tail);
   return true;
 }
 
 
 void read_ulp() {
-  size = ulp_get(ulp_size); // size of buffer in 32bit words for inc()
-
   static uint16_t value = 0;
 
-  uint16_t val;
   uint16_t item;
 
+  size = &ulp_buffer_end - &ulp_buffer;
+  while( (offset = ulp_get(ulp_offset)) == 0 )
+    vTaskDelay(1 / portTICK_PERIOD_MS); // wait until ulp is initialized
+  printf("offset: %04x, size: %04x\n", offset, size);
+
   for(;;) {
-    val = ulp_get(ulp_value);
+    // only while testing...
+    uint16_t val = ulp_get(ulp_value);
     if( val != value ) {
       value = val;
       printf("expected: %04x\n", value);
@@ -83,7 +89,7 @@ void read_ulp() {
       if(  item == '\n' ) fflush(stdout);
     }
     else {
-      xTaskDelay(0); // wait a bit (maybe helps ulp to access shared memory)
+      vTaskDelay(1 / portTICK_PERIOD_MS); // wait a bit (maybe helps ulp to access shared memory)
     }
   }
 }
