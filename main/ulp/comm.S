@@ -7,33 +7,32 @@ Simple ULP program that writes messages in a ring buffer that are read by the ma
 // Declare data visible to main cores
 .global entry                 // ulp start address used by main core program
 
-.global buffer                // Start address of ring buffer
-.global buffer_end            // Adress behind buffer
-.global head                  // Write position of ringbuffer
-.global tail                  // Read position of ring buffer
-.global offset                // Tell main cores our idea of buffer address
-.global value                 // global until ringbuffer works...
+.global offset                // tell main cores our idea of buffer address
+.global head                  // write position of ringbuffer
+.global tail                  // read position of ring buffer
+.global buffer                // start address of ring buffer
+.global buffer_end            // adress behind buffer
+
 
 .bss
 
 data:                         // data frame pointer
 
-value:  .long 0               // Internal/sensor value to push to ring buffer
-offset: .long 0               // Contains address of buffer
-buffer: .long 0               // circular buffer tail-head-gap
-        .skip 124             // 31 long buffer items
-buffer_end:
-
+offset: .long 0               // address of buffer for main core
 head:   .long 0
 tail:   .long 0
+value:  .long 0               // internal/sensor value to push to ring buffer
+buffer: .long 0               // circular buffer tail-head-gap
+        .skip 124             // and 31 long buffer items
+buffer_end:
 
-strbuf: .skip 5               // buffer for i2h converted value
 
-// Offsets to variables relative to data (which I try to keep in r2)
+// Offsets to variables relative to data (which I try to keep in r2 for ld/st)
+.set    o_offset,     (offset-data)
 .set    o_head,       (head-data)
 .set    o_tail,       (tail-data)
-.set    o_offset,     (offset-data)
 .set    o_value,      (value-data)
+
 
 .text
 
