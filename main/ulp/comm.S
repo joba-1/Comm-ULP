@@ -4,6 +4,10 @@ JoBa1 ESP32 ULP communication example
 Simple ULP program that writes messages in a ring buffer that are read by the main cores
 */
 
+#include "soc/soc_ulp.h"      // for READ_RTC_FIELD()
+#include "soc/rtc_cntl_reg.h" // for RTC_CNTL_LOW_POWER_ST_REG
+
+
 // Declare data visible to main cores
 .global entry                 // ulp start address used by main core program
 
@@ -91,16 +95,23 @@ put:    ld    r1, r2, o_head  // r1 points to buffer at head position
         add   r1, r1, 1       // head++
         move  r0, buffer_end
         sub   r0, r0, r1      // 0 means head beyond buffer
-        jumpr head_ok, 1, ge
+        jumpr check_tail, 1, ge
         move  r1, buffer      // set head at start of buffer
-head_ok:
-        st    r1, r2, o_head  // new head saved
 check_tail:
         ld    r0, r2, o_tail
-        sub   r1, r0, r1
-        jump  overflow, eq    // need to wait
+        sub   r0, r0, r1
+        jump  overflow, eq    // need to wake up main cores
+have_space:
+        st    r1, r2, o_head  // new head saved
         jump  r3
 overflow:
+        READ_RTC_FIELD(RTC_CNTL_LOW_POWER_ST_REG, RTC_CNTL_RDY_FOR_WAKEUP)
+        and r0, r0, 1
+        jump overflow, eq     // Retry until the bit is set
+        wake                  // Trigger wake up
+check_again:
         wait  10              // wait some ticks, so main core can update tail
-        ld    r1, r2, o_head
-        jump  check_tail
+        ld    r0, r2, o_tail
+        sub   r0, r0, r1
+        jump  check_again, eq // still need to wait for main cores
+        jump  have_space
