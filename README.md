@@ -1,7 +1,6 @@
 # ULP <=> Main Core Communication
 
-Me trying to make an esp32 ULP talk to the main cores (and vice versa).
-Not working yet :(
+Me trying to make an esp32 ULP talk to the main cores.
 
 ## Build - Flash - Monitor
 * Prepare shell to use ESP-IDF (see my [Blink-ULP repo](https://github.com/joba-1/Blink-ULP/blob/master/README.md) for details)
@@ -21,7 +20,10 @@ make -j8 flash monitor ESPPORT=/dev/ttyUSB0 ESPBAUD=115200
 
 ```
 
-When done, ULP does some measurement and sends results to the main cores where they are formated and printed to serial
+When done, the ULP does some measurement and sends results to the main cores where they are formated and printed to serial.
+
+For now, the ULP simply increments a counter, writes the result as a line of hex nibbles in the ring buffer and then halts for a short time.
+If the ringbuffer is full, the ULP wakes up the main cores and waits for them to fetch the data from the buffer and print it to serial.
 
 Exit the monitor with [Ctrl]-] (which is [Strg]-[Alt-Gr]-] on german keyboard)
 
