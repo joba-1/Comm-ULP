@@ -18,7 +18,7 @@ uint16_t buffer_start_ulp; // buffer start in ulp address space
 uint16_t buffer_end_ulp;   // buffer end in ulp address space
 
 
-// Get one 16 bit value from the rinbuffer that is filled by the ULP,
+// Get one 16 bit value from the ringbuffer that is filled by the ULP,
 // and increment the tail pointer to make room for more ULP input
 bool get( uint16_t *item ) {
   uint16_t tail = ulp_get(ulp_tail);
