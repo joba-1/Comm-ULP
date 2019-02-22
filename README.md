@@ -20,10 +20,9 @@ make -j8 flash monitor ESPPORT=/dev/ttyUSB0 ESPBAUD=115200
 
 ```
 
-When done, the ULP does some measurement and sends results to the main cores where they are formated and printed to serial.
-
-For now, the ULP simply increments a counter, writes the result as a line of hex nibbles in the ring buffer and then halts for a short time.
-If the ringbuffer is full, the ULP wakes up the main cores and waits for them to fetch the data from the buffer and print it to serial.
+The ULP does some counting and sends results as hex lines to the main cores where they are printed to serial.
+The main cores sleep until the ULP wakes them up because the buffer is full.
+The ULP sleeps as well between counts -> very low power consumption.
 
 Exit the monitor with [Ctrl]-] (which is [Strg]-[Alt-Gr]-] on german keyboard)
 
